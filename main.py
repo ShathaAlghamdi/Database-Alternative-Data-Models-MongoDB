@@ -94,9 +94,75 @@ try:
     for item in books.find({"price": {"$gt": 100}}):
         print(item["title"])
 
+# Update and delete delete data #
 
+    # UPDATE: Change the publisher's city
+    result = books.update_one(
+        {"title": "Advanced Python"},
+        {"$set": {"publisher.city": "Jeddah"}}
+    )
 
+    print("\nDocuments updated:", result.modified_count)
 
+    updated_book = books.find_one(
+        {"title": "Advanced Python"}
+    )
+
+    print("New city:", updated_book["publisher"]["city"])
+
+    # DELETE: Add and remove a temporary book
+    books.insert_one({
+        "title": "Temporary Book",
+        "price": 50
+    })
+
+    result = books.delete_one({
+        "title": "Temporary Book"
+    })
+
+    print("Documents deleted:", result.deleted_count)
+
+    # INDEXING: Check query before creating an index
+      # INDEXING: Compare query execution plans
+    print("\n--- Indexing Experiment ---")
+
+    query = {"title": "Advanced Python"}
+
+    # Force a collection scan before using an index
+    before = db.command(
+        "explain",
+        {
+            "find": "books",
+            "filter": query,
+            "hint": {"$natural": 1}
+        },
+        verbosity="executionStats"
+    )
+
+    print("\nBefore indexing:")
+    print("Documents examined:",
+          before["executionStats"]["totalDocsExamined"])
+
+    # Create an index on the title field
+    books.create_index("title")
+
+    # Force MongoDB to use the title index
+    after = db.command(
+        "explain",
+        {
+            "find": "books",
+            "filter": query,
+            "hint": "title_1"
+        },
+        verbosity="executionStats"
+    )
+
+    print("\nUsing title index:")
+    print("Documents examined:",
+          after["executionStats"]["totalDocsExamined"])
+
+    print("\nIndexes:",
+          list(books.index_information().keys()))
 
 except ConnectionFailure as error:
     print("MongoDB connection failed:", error)
