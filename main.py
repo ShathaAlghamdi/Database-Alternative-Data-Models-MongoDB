@@ -28,13 +28,75 @@ try:
         "available": True
     }
 
-    result = books.insert_one(book)
-    print("Book inserted:", result.inserted_id)
+    books.update_one(
+    {"title": book["title"]},
+    {"$setOnInsert": book},
+    upsert=True
+    )
 
-    # Read documents
-    print("\nBooks in database:")
-    for item in books.find():
-        print(item)
+    print("Book is ready!")
+
+   
+    # Demonstrate flexible schema
+    additional_books = [
+        {
+            "title": "Learn SQL",
+            "author": {
+                "name": "Ahmed",
+                "country": "Saudi Arabia"
+            },
+            "price": 95,
+            "tags": ["SQL", "Database"],
+            "available": True
+        },
+        {
+            "title": "Advanced Python",
+            "author": {
+                "name": "Sarah",
+                "country": "Saudi Arabia"
+            },
+            "price": 150,
+            "tags": ["Python", "Advanced"],
+            "available": False,
+            "pages": 450,
+            "publisher": {
+                "name": "Tech Press",
+                "city": "Riyadh"
+            }
+        }
+    ]
+
+    for book_data in additional_books:
+        books.update_one(
+            {"title": book_data["title"]},
+            {"$setOnInsert": book_data},
+            upsert=True
+        )
+
+    print("Flexible schema documents are ready!")
+
+    # ----------------------- #
+    # Query nested documents
+    print("\nBooks written by Sarah:")
+
+    for item in books.find({"author.name": "Sarah"}):
+        print(item["title"])
+
+    # Query arrays
+    print("\nBooks with Python tag:")
+
+    for item in books.find({"tags": "Python"}):
+        print(item["title"])
+
+    # Query by price
+    print("\nBooks with price greater than 100:")
+
+    for item in books.find({"price": {"$gt": 100}}):
+        print(item["title"])
+
+
+
+
 
 except ConnectionFailure as error:
     print("MongoDB connection failed:", error)
